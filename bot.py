@@ -102,7 +102,7 @@ async def recommend_trips(ctx, *, arg=None):
         for pref in user_prefs:
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
     print(prompt)
-
+    # Will need to add that the prompt needs to be formatted
     response = await agent.run_command(prompt)
     trip_suggestions = response.split("\n")
     full_response = "**AI-Recommended Trips:**\n" + "\n".join([f"{i+1}. {trip}" for i, trip in enumerate(trip_suggestions)])
