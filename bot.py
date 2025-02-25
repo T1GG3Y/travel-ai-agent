@@ -26,6 +26,8 @@ agent = MistralAgent()
 # Get the token from the environment variables
 token = os.getenv("DISCORD_TOKEN")
 
+# Dictionary to store trip preferences (static for now)
+trip_preferences = {}
 
 @bot.event
 async def on_ready():
@@ -74,6 +76,37 @@ async def ping(ctx, *, arg=None):
     else:
         await ctx.send(f"Pong! Your argument was {arg}")
 
+# Recommend Trips
+@bot.command(name="recommend_trips", help="AI recommends trips")
+async def recommend_trips(ctx, *, arg=None):
+    prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs"
+    # Create the dictionary statically for testing
+    trip_preferences["user_1"] = []
+    trip_preferences["user_1"].append({
+        "user": "user_1",
+        "location": "beach",
+        "budget": "1,000",
+        "dates": "3/10-3/16",
+        "mode": "Relax"
+    })
+    trip_preferences["user_2"] = []
+    trip_preferences["user_2"].append({
+        "user": "user_2",
+        "location": "washington d.c.",
+        "budget": "1,500",
+        "dates": "3/11-3/15",
+        "mode": "exploring"
+    })
+    # Add to the prompt
+    for user_prefs in trip_preferences.values():
+        for pref in user_prefs:
+            prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
+    print(prompt)
 
+    response = await agent.run_command(prompt)
+    trip_suggestions = response.split("\n")
+    full_response = "**AI-Recommended Trips:**\n" + "\n".join([f"{i+1}. {trip}" for i, trip in enumerate(trip_suggestions)])
+    await ctx.send(full_response)
+    
 # Start the bot, connecting it to the gateway
 bot.run(token)

@@ -27,3 +27,16 @@ class MistralAgent:
         )
 
         return response.choices[0].message.content
+    # Handle non-discord messages
+    async def run_command(self, message):
+        # The simplest form of an agent
+        # Send the message's content to Mistral's API and return Mistral's response
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": message},
+        ]
+        response = await self.client.chat.complete_async(
+            model=MISTRAL_MODEL,
+            messages=messages,
+        )
+        return response.choices[0].message.content
