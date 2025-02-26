@@ -1,6 +1,8 @@
 import os
 import discord
 import logging
+import json
+import re
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -103,9 +105,41 @@ async def recommend_trips(ctx, *, arg=None):
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
     print(prompt)
     # Will need to add that the prompt needs to be formatted
+    prompt += "Please format the response in JSON with this structure:\n"
+    prompt += """"
+                Based on the following travel preferences, suggest a few ideal trip options. 
+                Please format the response in JSON with this structure:
+                [
+                {
+                    "name": "Trip Name",
+                    "dates": "Trip Dates",
+                    "trip_style": "Trip Style",
+                    "budget": "Budget",
+                    "activities": ["Activity 1", "Activity 2", "Activity 3"]
+                },
+                ...
+                ]
+                """
+    prompt += "\nReturn only the JSON array and no extra text."
+
     response = await agent.run_command(prompt)
-    trip_suggestions = response.split("\n")
-    full_response = "**AI-Recommended Trips:**\n" + "\n".join([f"{i+1}. {trip}" for i, trip in enumerate(trip_suggestions)])
+    # Remove Markdown code block (```json ... ```)
+    if response.startswith("```json"):
+        response = response[7:-3].strip()  # Remove ```json at start and ``` at end
+    elif response.startswith("```"):
+        response = response[3:-3].strip()  # Generic ``` removal if no json tag
+    try:
+        trips = json.loads(response.strip())  # Try parsing the JSON output
+    except json.JSONDecodeError:
+        await ctx.send("Error: AI response is not valid JSON. Here is what was returned:\n" + response)
+        return
+    full_response = "**AI-Recommended Trips:**\n"
+    for i, trip in enumerate(trips, start=1):
+        full_response += f"{i}. **{trip['name']}**\n"
+        full_response += f"Dates: {trip['dates']}\n"
+        full_response += f"Style: {trip['trip_style']}\n"
+        full_response += f"Budget: {trip['budget']}\n"
+        full_response += f"Activities: {', '.join(trip['activities'])}\n\n"
     await ctx.send(full_response)
     
 # Start the bot, connecting it to the gateway
