@@ -81,7 +81,8 @@ async def ping(ctx, *, arg=None):
 # Recommend Trips
 @bot.command(name="recommend_trips", help="AI recommends trips")
 async def recommend_trips(ctx, *, arg=None):
-    prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs"
+    # Should we add a certain number of recommendations?
+    prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs. Make sure the activity list is descriptive."
     # Create the dictionary statically for testing
     trip_preferences["user_1"] = []
     trip_preferences["user_1"].append({
@@ -106,7 +107,7 @@ async def recommend_trips(ctx, *, arg=None):
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
 
     # AI answer is formatted as JSON
-    prompt += "Based on the following travel preferences, suggest a few ideal trip options. Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
+    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
     prompt += """"
                 [
                 {
