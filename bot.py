@@ -106,7 +106,7 @@ async def recommend_trips(ctx, *, arg=None):
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
 
     # AI answer is formatted as JSON
-    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
+    prompt += "Based on the following travel preferences, suggest a few ideal trip options. Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
     prompt += """"
                 [
                 {
