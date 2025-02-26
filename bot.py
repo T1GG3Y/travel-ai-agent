@@ -99,13 +99,14 @@ async def recommend_trips(ctx, *, arg=None):
         "dates": "3/11-3/15",
         "mode": "exploring"
     })
-    # Add to the prompt
+    
+    # Add user preferences to the prompt
     for user_prefs in trip_preferences.values():
         for pref in user_prefs:
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
-    print(prompt)
-    # Will need to add that the prompt needs to be formatted
-    prompt += "Please format the response in JSON with this structure:\n"
+
+    # AI answer is formatted as JSON
+    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
     prompt += """"
                 Based on the following travel preferences, suggest a few ideal trip options. 
                 Please format the response in JSON with this structure:
@@ -120,19 +121,17 @@ async def recommend_trips(ctx, *, arg=None):
                 ...
                 ]
                 """
-    prompt += "\nReturn only the JSON array and no extra text."
+    prompt += "\nReturn only the JSON array and no extra text. "
 
     response = await agent.run_command(prompt)
-    # Remove Markdown code block (```json ... ```)
-    if response.startswith("```json"):
-        response = response[7:-3].strip()  # Remove ```json at start and ``` at end
-    elif response.startswith("```"):
-        response = response[3:-3].strip()  # Generic ``` removal if no json tag
+    # Try and parse the JSON
     try:
-        trips = json.loads(response.strip())  # Try parsing the JSON output
+        trips = json.loads(response)
     except json.JSONDecodeError:
         await ctx.send("Error: AI response is not valid JSON. Here is what was returned:\n" + response)
         return
+
+    # Print to the channel the recommended trip options
     full_response = "**AI-Recommended Trips:**\n"
     for i, trip in enumerate(trips, start=1):
         full_response += f"{i}. **{trip['name']}**\n"
