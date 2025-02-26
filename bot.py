@@ -99,7 +99,7 @@ async def recommend_trips(ctx, *, arg=None):
         "dates": "3/11-3/15",
         "mode": "exploring"
     })
-    
+
     # Add user preferences to the prompt
     for user_prefs in trip_preferences.values():
         for pref in user_prefs:
@@ -108,8 +108,6 @@ async def recommend_trips(ctx, *, arg=None):
     # AI answer is formatted as JSON
     prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
     prompt += """"
-                Based on the following travel preferences, suggest a few ideal trip options. 
-                Please format the response in JSON with this structure:
                 [
                 {
                     "name": "Trip Name",
@@ -121,8 +119,6 @@ async def recommend_trips(ctx, *, arg=None):
                 ...
                 ]
                 """
-    prompt += "\nReturn only the JSON array and no extra text. "
-
     response = await agent.run_command(prompt)
     # Try and parse the JSON
     try:
