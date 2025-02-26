@@ -1,6 +1,8 @@
 import os
 import discord
 import logging
+import json
+import re
 
 from discord.ext import commands
 from dotenv import load_dotenv
@@ -26,8 +28,27 @@ agent = MistralAgent()
 # Get the token from the environment variables
 token = os.getenv("DISCORD_TOKEN")
 
-# Dictionary to store trip preferences (static for now)
+# Dictionary to store trip preferences
 trip_preferences = {}
+# Create the dictionary statically for testing
+'''
+trip_preferences["user_1"] = []
+trip_preferences["user_1"].append({
+    "user": "user_1",
+    "location": "beach",
+    "budget": "1,000",
+    "dates": "3/10-3/16",
+    "mode": "Relax"
+})
+trip_preferences["user_2"] = []
+trip_preferences["user_2"].append({
+    "user": "user_2",
+    "location": "washington d.c.",
+    "budget": "1,500",
+    "dates": "3/11-3/15",
+    "mode": "exploring"
+})
+'''
 
 @bot.event
 async def on_ready():
@@ -76,36 +97,63 @@ async def ping(ctx, *, arg=None):
     else:
         await ctx.send(f"Pong! Your argument was {arg}")
 
+# Submit Trips
+@bot.command(name="submit_trips", help="Users submit trip ideas and preferences")
+async def submit_trips(ctx, location: str, budget: str, dates: str, mode: str):
+    if ctx.guild.id not in trip_preferences:
+        trip_preferences[ctx.guild.id] = []
+    
+    trip_preferences[ctx.guild.id].append({
+        "user": ctx.author.name,
+        "location": location,
+        "budget": budget,
+        "dates": dates,
+        "mode": mode.lower()
+    })
+
+    await ctx.send(f"{ctx.author.name} submitted travel preferences: Location - {location}, Budget - {budget}, Dates - {dates}, Mode - {mode.capitalize()}.")
+
 # Recommend Trips
 @bot.command(name="recommend_trips", help="AI recommends trips")
 async def recommend_trips(ctx, *, arg=None):
-    prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs"
-    # Create the dictionary statically for testing
-    trip_preferences["user_1"] = []
-    trip_preferences["user_1"].append({
-        "user": "user_1",
-        "location": "beach",
-        "budget": "1,000",
-        "dates": "3/10-3/16",
-        "mode": "Relax"
-    })
-    trip_preferences["user_2"] = []
-    trip_preferences["user_2"].append({
-        "user": "user_2",
-        "location": "washington d.c.",
-        "budget": "1,500",
-        "dates": "3/11-3/15",
-        "mode": "exploring"
-    })
-    # Add to the prompt
+    # Should we add a certain number of recommendations?
+    prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs. Make sure the activity list is descriptive."
+    
+    # Add user preferences to the prompt
     for user_prefs in trip_preferences.values():
         for pref in user_prefs:
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
-    print(prompt)
-    # Will need to add that the prompt needs to be formatted
+
+    # AI answer is formatted as JSON
+    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
+    prompt += """"
+                [
+                {
+                    "name": "Trip Name",
+                    "dates": "Trip Dates",
+                    "trip_style": "Trip Style",
+                    "budget": "Budget",
+                    "activities": ["Activity 1", "Activity 2", "Activity 3"]
+                },
+                ...
+                ]
+                """
     response = await agent.run_command(prompt)
-    trip_suggestions = response.split("\n")
-    full_response = "**AI-Recommended Trips:**\n" + "\n".join([f"{i+1}. {trip}" for i, trip in enumerate(trip_suggestions)])
+    # Try and parse the JSON
+    try:
+        trips = json.loads(response)
+    except json.JSONDecodeError:
+        await ctx.send("Error: AI response is not valid JSON. Here is what was returned:\n" + response)
+        return
+
+    # Print to the channel the recommended trip options
+    full_response = "**AI-Recommended Trips:**\n"
+    for i, trip in enumerate(trips, start=1):
+        full_response += f"{i}. **{trip['name']}**\n"
+        full_response += f"Dates: {trip['dates']}\n"
+        full_response += f"Style: {trip['trip_style']}\n"
+        full_response += f"Budget: {trip['budget']}\n"
+        full_response += f"Activities: {', '.join(trip['activities'])}\n\n"
     await ctx.send(full_response)
     
 # Start the bot, connecting it to the gateway
