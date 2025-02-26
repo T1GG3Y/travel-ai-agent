@@ -28,8 +28,27 @@ agent = MistralAgent()
 # Get the token from the environment variables
 token = os.getenv("DISCORD_TOKEN")
 
-# Dictionary to store trip preferences (static for now)
+# Dictionary to store trip preferences
 trip_preferences = {}
+# Create the dictionary statically for testing
+'''
+trip_preferences["user_1"] = []
+trip_preferences["user_1"].append({
+    "user": "user_1",
+    "location": "beach",
+    "budget": "1,000",
+    "dates": "3/10-3/16",
+    "mode": "Relax"
+})
+trip_preferences["user_2"] = []
+trip_preferences["user_2"].append({
+    "user": "user_2",
+    "location": "washington d.c.",
+    "budget": "1,500",
+    "dates": "3/11-3/15",
+    "mode": "exploring"
+})
+'''
 
 @bot.event
 async def on_ready():
@@ -78,29 +97,28 @@ async def ping(ctx, *, arg=None):
     else:
         await ctx.send(f"Pong! Your argument was {arg}")
 
+# Submit Trips
+@bot.command(name="submit_trips", help="Users submit trip ideas and preferences")
+async def submit_trips(ctx, location: str, budget: str, dates: str, mode: str):
+    if ctx.guild.id not in trip_preferences:
+        trip_preferences[ctx.guild.id] = []
+    
+    trip_preferences[ctx.guild.id].append({
+        "user": ctx.author.name,
+        "location": location,
+        "budget": budget,
+        "dates": dates,
+        "mode": mode.lower()
+    })
+
+    await ctx.send(f"{ctx.author.name} submitted travel preferences: Location - {location}, Budget - {budget}, Dates - {dates}, Mode - {mode.capitalize()}.")
+
 # Recommend Trips
 @bot.command(name="recommend_trips", help="AI recommends trips")
 async def recommend_trips(ctx, *, arg=None):
     # Should we add a certain number of recommendations?
     prompt = "Based on the following travel preferences, suggest a few trip options that balances everyone's inputs. Make sure the activity list is descriptive."
-    # Create the dictionary statically for testing
-    trip_preferences["user_1"] = []
-    trip_preferences["user_1"].append({
-        "user": "user_1",
-        "location": "beach",
-        "budget": "1,000",
-        "dates": "3/10-3/16",
-        "mode": "Relax"
-    })
-    trip_preferences["user_2"] = []
-    trip_preferences["user_2"].append({
-        "user": "user_2",
-        "location": "washington d.c.",
-        "budget": "1,500",
-        "dates": "3/11-3/15",
-        "mode": "exploring"
-    })
-
+    
     # Add user preferences to the prompt
     for user_prefs in trip_preferences.values():
         for pref in user_prefs:
