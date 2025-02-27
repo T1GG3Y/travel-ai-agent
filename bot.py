@@ -49,6 +49,8 @@ trip_preferences["user_2"].append({
     "mode": "exploring"
 })
 '''
+# Dictionary to store trip votes
+trip_votes = {}
 
 @bot.event
 async def on_ready():
@@ -86,7 +88,6 @@ async def on_message(message: discord.Message):
 
 # Commands
 
-
 # This example command is here to show you how to add commands to the bot.
 # Run !ping with any number of arguments to see the command in action.
 # Feel free to delete this if your project will not need commands.
@@ -96,6 +97,12 @@ async def ping(ctx, *, arg=None):
         await ctx.send("Pong!")
     else:
         await ctx.send(f"Pong! Your argument was {arg}")
+
+# Add clear preferences command
+@bot.command(name="clear_preferences", help="Remove a user's trip preferences")
+async def clear_preferences(ctx, *, arg=None):
+    trip_preferences[ctx.guild.id] = []
+    await ctx.send(f"Removed {ctx.author.name}'s trip preferences")
 
 # Submit Trips
 @bot.command(name="submit_trips", help="Users submit trip ideas and preferences")
@@ -110,8 +117,13 @@ async def submit_trips(ctx, location: str, budget: str, dates: str, mode: str):
         "dates": dates,
         "mode": mode.lower()
     })
-
+    # Display all submitted preferences
+    preferences_message = "**Current Trip Preferences:**\n"
+    for pref in trip_preferences[ctx.guild.id]:
+        preferences_message += (f"- {pref['user']}: Location - {pref['location']}, Budget - {pref['budget']}, "
+                                f"Dates - {pref['dates']}, Mode - {pref['mode'].capitalize()}\n")
     await ctx.send(f"{ctx.author.name} submitted travel preferences: Location - {location}, Budget - {budget}, Dates - {dates}, Mode - {mode.capitalize()}.")
+    await ctx.send(preferences_message)
 
 # Recommend Trips
 @bot.command(name="recommend_trips", help="AI recommends trips")
@@ -125,7 +137,7 @@ async def recommend_trips(ctx, *, arg=None):
             prompt += f"- {pref['user']} wants to travel to {pref['location']} on a {pref['mode']} trip with a budget of {pref['budget']} during {pref['dates']}.\n"
 
     # AI answer is formatted as JSON
-    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text:\n"
+    prompt += "Please format the response in JSON with this structure. Return ONLY a raw JSON array. Do NOT use Markdown formatting, triple backticks, or any extra text, again just the raw JSON array:\n"
     prompt += """"
                 [
                 {
@@ -139,12 +151,20 @@ async def recommend_trips(ctx, *, arg=None):
                 ]
                 """
     response = await agent.run_command(prompt)
+    # Remove markdown
+    if response.startswith("```json"):
+        response = response[7:-3].strip()
+    elif response.startswith("```"):
+        response = response[3:-3].strip()
     # Try and parse the JSON
     try:
         trips = json.loads(response)
     except json.JSONDecodeError:
         await ctx.send("Error: AI response is not valid JSON. Here is what was returned:\n" + response)
         return
+
+    # Add options to trip_votes
+    trip_votes[ctx.guild.id] = {"trips": trips, "votes": {trip["name"]: 0 for trip in trips}}
 
     # Print to the channel the recommended trip options
     full_response = "**AI-Recommended Trips:**\n"
@@ -155,6 +175,21 @@ async def recommend_trips(ctx, *, arg=None):
         full_response += f"Budget: {trip['budget']}\n"
         full_response += f"Activities: {', '.join(trip['activities'])}\n\n"
     await ctx.send(full_response)
-    
+
+# Add vote trips command
+@bot.command(name="vote_trip", help="Users vote for trips based on the number")
+async def vote_trip(ctx, trip_number:int):
+    if ctx.guild.id not in trip_votes or "trips" not in trip_votes[ctx.guild.id]:
+        await ctx.send("No trips available to vote on. Use `!recommend_trips` first.")
+        return
+    trip_list = trip_votes[ctx.guild.id]["trips"]
+    if trip_number < 1 or trip_number > len(trip_list):
+        await ctx.send("Invalid trip number!")
+        return
+    selected_trip = trip_list[trip_number - 1]["name"]
+    trip_votes[ctx.guild.id]["votes"][selected_trip] += 1
+    vote_counts = "\n".join([f"{name}: {count} votes" for name, count in trip_votes[ctx.guild.id]["votes"].items()])
+    await ctx.send(f"{ctx.author.name} voted for: {selected_trip}\n \n**Current Vote Count:**\n{vote_counts}")
+
 # Start the bot, connecting it to the gateway
 bot.run(token)
