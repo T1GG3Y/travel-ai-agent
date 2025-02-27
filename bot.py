@@ -98,7 +98,7 @@ async def ping(ctx, *, arg=None):
     else:
         await ctx.send(f"Pong! Your argument was {arg}")
 
-# Add clear preferences command
+# Clear preferences command
 @bot.command(name="clear_preferences", help="Remove a user's trip preferences")
 async def clear_preferences(ctx, *, arg=None):
     trip_preferences[ctx.guild.id] = []
@@ -176,7 +176,7 @@ async def recommend_trips(ctx, *, arg=None):
         full_response += f"Activities: {', '.join(trip['activities'])}\n\n"
     await ctx.send(full_response)
 
-# Add vote trips command
+# Vote trips command
 @bot.command(name="vote_trip", help="Users vote for trips based on the number")
 async def vote_trip(ctx, trip_number:int):
     if ctx.guild.id not in trip_votes or "trips" not in trip_votes[ctx.guild.id]:
@@ -190,6 +190,35 @@ async def vote_trip(ctx, trip_number:int):
     trip_votes[ctx.guild.id]["votes"][selected_trip] += 1
     vote_counts = "\n".join([f"{name}: {count} votes" for name, count in trip_votes[ctx.guild.id]["votes"].items()])
     await ctx.send(f"{ctx.author.name} voted for: {selected_trip}\n \n**Current Vote Count:**\n{vote_counts}")
+
+# Finalize a trip and get the full itinerary
+@bot.command(name="finalize_trip", help="Generate a full itinerary for the trip with the most votes")
+async def finalize_trip(ctx, *, arg=None):
+    if ctx.guild.id not in trip_votes or not trip_votes[ctx.guild.id]["votes"]:
+        await ctx.send("No trips have been voted on yet! Use `!vote_trip` to cast your votes.")
+        return
+    best_trip = max(trip_votes[ctx.guild.id]["votes"], key=trip_votes[ctx.guild.id]["votes"].get, default=None)
+    if not best_trip or trip_votes[ctx.guild.id]["votes"][best_trip] == 0:
+        await ctx.send("No votes have been cast yet!")
+        return
+    
+    # Include full trip details in the prompt
+    selected_trip_data = next((trip for trip in trip_votes[ctx.guild.id]["trips"] if trip["name"] == best_trip), None)
+    if not selected_trip_data:
+        await ctx.send("Error: Selected trip details not found.")
+        return
+    trip_json = json.dumps(selected_trip_data, indent=2)
+    # Should we ask for more descriptive itineraries?
+    prompt = f"Generate a detailed travel itinerary for the following trip. Ensure a daily schedule based on the details provided.\nTrip Details:\n{trip_json}"
+    response = await agent.run_command(prompt)
+
+    # Remove excess blank lines and fix encoding issues
+    response = response.replace("\n\n\n", "\n").strip()
+    # Ensure messages do not exceed Discord's 2000 character limit
+    response_chunks = [response[i:i+1900] for i in range(0, len(response), 1900)]
+    await ctx.send("Finalized Trip Itinerary:")
+    for chunk in response_chunks:
+        await ctx.send(chunk)
 
 # Start the bot, connecting it to the gateway
 bot.run(token)
