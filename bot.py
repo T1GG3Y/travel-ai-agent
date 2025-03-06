@@ -126,6 +126,27 @@ async def submit_trips(ctx, location: str = None, budget: str = None, dates: str
         if not location or not budget or not dates or not mode:
             await ctx.send("All fields (location, budget, dates, mode) are required.")
             return
+        
+        # Validate budget is a number
+        # Remove commas and spaces for validation
+        clean_budget = budget.replace(",", "").replace(" ", "")
+        if not clean_budget.replace(".", "").isdigit():
+            await ctx.send("Budget must be a number (e.g., 1000 or 1,000).")
+            return
+        
+        # Validate dates is either a month or a number format
+        months = ["january", "february", "march", "april", "may", "june", "july", 
+                 "august", "september", "october", "november", "december",
+                 "jan", "feb", "mar", "apr", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+        
+        # Check if dates contains a month name
+        is_month = any(month in dates.lower() for month in months)
+        # Check if dates contains numbers (like MM/DD-MM/DD or just a number)
+        has_numbers = any(char.isdigit() for char in dates)
+        
+        if not (is_month or has_numbers):
+            await ctx.send("Dates must be either a month name (e.g., 'January', 'Feb') or a date format (e.g., '3/10-3/16', '15').")
+            return
         # Initialize if not exists
         if ctx.guild.id not in trip_preferences:
             trip_preferences[ctx.guild.id] = []
