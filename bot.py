@@ -45,46 +45,7 @@ async def on_ready():
     """
     logger.info(f"{bot.user} has connected to Discord!")
 
-# TO DO: Need to comment this out since we don't want the bot to respond to every message
-@bot.event
-async def on_message(message: discord.Message):
-    """
-    Called when a message is sent in any channel the bot can see.
-
-    https://discordpy.readthedocs.io/en/latest/api.html#discord.on_message
-    """
-    # Don't delete this line! It's necessary for the bot to process commands.
-    await bot.process_commands(message)
-
-    # Ignore messages from self or other bots to prevent infinite loops.
-    if message.author.bot or message.content.startswith("!"):
-        return
-
-    # Process the message with the agent you wrote
-    # Open up the agent.py file to customize the agent
-    logger.info(f"Processing message from {message.author}: {message.content}")
-    try:
-        response = await agent.run(message)
-        # Send the response back to the channel
-        await message.reply(response)
-    except Exception as e:
-        logger.error(f"Error processing message: {e}")
-        await message.reply("I encountered an error processing your message. Please try again later.")
-
-
 # Commands
-
-# This example command is here to show you how to add commands to the bot.
-# Run !ping with any number of arguments to see the command in action.
-# Feel free to delete this if your project will not need commands.
-# TO DO: Remove the example command
-@bot.command(name="ping", help="Pings the bot.")
-async def ping(ctx, *, arg=None):
-    if arg is None:
-        await ctx.send("Pong!")
-    else:
-        await ctx.send(f"Pong! Your argument was {arg}")
-
 # Clear preferences command
 @bot.command(name="clear_preferences", help="Remove a user's trip preferences")
 async def clear_preferences(ctx, *, arg=None):
