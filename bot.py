@@ -24,7 +24,6 @@ bot = commands.Bot(command_prefix=PREFIX, intents=intents)
 # Import the Mistral agent from the agent.py file
 agent = MistralAgent()
 
-
 # Get the token from the environment variables
 token = os.getenv("DISCORD_TOKEN")
 if not token:
@@ -33,25 +32,6 @@ if not token:
 
 # Dictionary to store trip preferences
 trip_preferences = {}
-# Create the dictionary statically for testing
-'''
-trip_preferences["user_1"] = []
-trip_preferences["user_1"].append({
-    "user": "user_1",
-    "location": "beach",
-    "budget": "1,000",
-    "dates": "3/10-3/16",
-    "mode": "Relax"
-})
-trip_preferences["user_2"] = []
-trip_preferences["user_2"].append({
-    "user": "user_2",
-    "location": "washington d.c.",
-    "budget": "1,500",
-    "dates": "3/11-3/15",
-    "mode": "exploring"
-})
-'''
 # Dictionary to store trip votes
 trip_votes = {}
 
@@ -65,7 +45,7 @@ async def on_ready():
     """
     logger.info(f"{bot.user} has connected to Discord!")
 
-
+# TO DO: Need to comment this out since we don't want the bot to respond to every message
 @bot.event
 async def on_message(message: discord.Message):
     """
@@ -97,6 +77,7 @@ async def on_message(message: discord.Message):
 # This example command is here to show you how to add commands to the bot.
 # Run !ping with any number of arguments to see the command in action.
 # Feel free to delete this if your project will not need commands.
+# TO DO: Remove the example command
 @bot.command(name="ping", help="Pings the bot.")
 async def ping(ctx, *, arg=None):
     if arg is None:
@@ -295,8 +276,7 @@ async def finalize_trip(ctx, *, arg=None):
             return
             
         trip_json = json.dumps(selected_trip_data, indent=2)
-        # Should we ask for more descriptive itineraries?
-        prompt = f"Generate a detailed travel itinerary for the following trip. Ensure a daily schedule based on the details provided.\nTrip Details:\n{trip_json}"
+        prompt = f"Generate a detailed and descriptive travel itinerary for the following trip. Ensure a daily schedule based on the details provided.\nTrip Details:\n{trip_json}"
         
         try:
             response = await agent.run_command(prompt)
