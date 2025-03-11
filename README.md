@@ -21,6 +21,8 @@ Command: `!commands`
 Displays a list of all available commands along with their descriptions to help users navigate the bot’s functionality.
 ### Submit Travel Preferences
 Command: `!submit_trips <location> <budget> <dates> <mode>` 
+Ex: !submit_trips Hawaii 1500 April relaxation
+
 
 Users submit:
 - Location: A destination or a type of location. If the location has multiple words, underscores can be used for spacing.
