@@ -6,12 +6,12 @@ This project was built on top of the starter code provided by the CS 153 teachin
 
 This Discord bot helps groups efficiently plan trips by collecting travel preferences, generating AI-based trip recommendations, facilitating voting, and finalizing comprehensive itineraries. The goal is to simplify group decision-making and ensure a well-organized travel experience.
 
-<!---
+
 
 ## Demo Video
-<> # [![Image 1224x834 Small](https://github.com/user-attachments/assets/990c87bc-17f8-44a6-8c0b-c313a8a04693)](https://drive.google.com/file/d/1doJQYJjCHA0fuOQ8hP3mcmDRORq7E28v/view)
+[Travel Bot Demo Video](https://drive.google.com/file/d/1ffi2MJJPPNzAFoWMM1BC89ZtqyCy_H5z/view?usp=sharing)
 
--->
+
 ## Features
 All of these commands are implemented in `bot.py`.
 
